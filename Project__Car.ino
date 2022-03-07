@@ -67,9 +67,9 @@ void loop() {
 
 
 
+  LineTracking();
   
-  
-  if(measure.RangeMilliMeter > 150){
+  /*if(measure.RangeMilliMeter > 150){
     goForward(170);
   }else{
     goBack();
@@ -77,6 +77,7 @@ void loop() {
     turnRight();
     delay(1000);
     }
+    */
   
 }
 int goForward(int speed){
@@ -86,24 +87,24 @@ int goForward(int speed){
     ledcWrite(3, 0); 
 }
 
-int goBack(){
+int goBack(int speed){
     ledcWrite(0, 0); 
     ledcWrite(1, 0); 
-    ledcWrite(2, 170); 
-    ledcWrite(3, 170); 
+    ledcWrite(2, speed); 
+    ledcWrite(3, speed); 
 }
 
-int turnLeft(){
-    ledcWrite(0, 135); 
+int turnLeft(int speed){
+    ledcWrite(0, speed); 
     ledcWrite(1, 0); 
     ledcWrite(2, 0); 
-    ledcWrite(3, 135); 
+    ledcWrite(3, speed); 
 }
 
-int turnRight(){
+int turnRight(int speed){
     ledcWrite(0, 0); 
-    ledcWrite(1, 135); 
-    ledcWrite(2, 135); 
+    ledcWrite(1, speed); 
+    ledcWrite(2, speed); 
     ledcWrite(3, 0); 
 }
 
@@ -127,22 +128,64 @@ int displayDistance(){
 //------------LINE TRACKING FUNCTION-----------
 //---------------------------------------------
 int LineTracking(){ 
-   int sensorL = digitalRead (leftSensor);
-  int sensorR = digitalRead (rightSensor);
+  int sensorL = analogRead (leftSensor);
+  int sensorR = analogRead (rightSensor);
+  int vSpeed = 125;        // MAX 255
+  int turn_speed = 160;    // MAX 255 
+  int turn_delay = 30;
+
+  Serial.print(F("Right sensor = "));
+  Serial.println((sensorR));
+    Serial.print(F("Left sensor = "));
+  Serial.println((sensorL));
   
-  if (sensorL == 0 && sensorR == 0){
-    ledcWrite(0, 0); // set the brightness of the LED
-    ledcWrite(1, 0); // set the brightness of the LED
-    ledcWrite(2, 150); // set the brightness of the LED
-    ledcWrite(3, 150); // set the brightness of the LED
+  if(sensorR > 300 && sensorL < 300)
+{
+  Serial.println("turning right");
+
+  turnRight(turn_speed);
+  delay(turn_delay);
+  
   }
-  else if(sensorL == 1 && sensorR == 0){
+if(sensorR < 300 && sensorL > 300)
+{
+  Serial.println("turning left");
+  
+  turnLeft(turn_speed);
+
+  delay(turn_delay);
+  }
+
+if(sensorR < 300 && sensorL < 300)
+{
+  Serial.println("going forward");
+
+  goBack(vSpeed);
+  
+  }
+
+if(sensorR > 300 && sensorL > 300)
+{ 
+  Serial.println("stop");
+  
+    ledcWrite(0, 0); 
+    ledcWrite(1, 0); 
+    ledcWrite(2, 0); 
+    ledcWrite(3, 0); 
+  
+  }
+
+  /*
+  if (sensorL < 300  && sensorR < 300){
+    goBack(140);
+  }
+  else if(sensorL > 300 && sensorR < 300){
     ledcWrite(0, 135); // set the brightness of the LED
     ledcWrite(1, 0); // set the brightness of the LED
     ledcWrite(2, 0); // set the brightness of the LED
     ledcWrite(3, 135); // set the brightness of the LED
   }
-  else if(sensorL == 0 && sensorR == 1){
+  else if(sensorL < 300 && sensorR  > 300){
     ledcWrite(0, 0); // set the brightness of the LED
     ledcWrite(1, 135); // set the brightness of the LED
     ledcWrite(2, 135); // set the brightness of the LED
@@ -155,4 +198,5 @@ int LineTracking(){
     ledcWrite(2, 0); // set the brightness of the LED
     ledcWrite(3, 0); // set the brightness of the LED
   }
+  */
 }
