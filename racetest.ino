@@ -1,8 +1,8 @@
-#include "Adafruit_VL53L0X.h"
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+
 #include <hcsr04.h>
 #include <ESP32Servo.h>
 
@@ -13,9 +13,7 @@
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 HCSR04 hcsr04(TRIG_PIN, ECHO_PIN, 20, 4000);
 Servo myservo;  // create servo object to control a servo
 
@@ -32,7 +30,7 @@ int servoPin = 19;
 int pos = 0;
 
 void setup() {
-  
+
   Serial.begin(115200);
 
   ledcAttachPin(led_gpio, 0); // assign a led pins to a channel
@@ -61,36 +59,31 @@ void setup() {
   while (! Serial) {
     delay(1);
   }
-  //------Distance Sensor Test----------
-  if (!lox.begin()) {
-    Serial.println(F("Failed to boot VL53L0X"));
-    while (1);
-  }
-  
+
+
 }
 
 void loop() {
 
-  race();
-  if(hcsr04.distanceInMillimeters > 300){
+  if (hcsr04.distanceInMillimeters() > 300) {
     Serial.println("Front sensor: ");
     Serial.println(hcsr04.distanceInMillimeters());
     goForward(200);
-    }
-    else{
-      
-      stopCar();
-      lookRight();
-      int right = hcsr04.distanceInMillimeters();
-      Serial.println("right sensor: ");
-      Serial.println(hcsr04.distanceInMillimeters());
-      
-      lookLeft();
-      int left = hcsr04.distanceInMillimeters();
-      Serial.println("left sensor: ");
-      Serial.println(hcsr04.distanceInMillimeters());
-      
-      if (right > left) {
+  }
+  else {
+
+    stopCar();
+    lookRight();
+    int right = hcsr04.distanceInMillimeters();
+    Serial.println("right sensor: ");
+    Serial.println(hcsr04.distanceInMillimeters());
+
+    lookLeft();
+    int left = hcsr04.distanceInMillimeters();
+    Serial.println("left sensor: ");
+    Serial.println(hcsr04.distanceInMillimeters());
+
+    if (right > left) {
       Serial.println("right MORE: ");
       lookForward();
       while (hcsr04.distanceInMillimeters() >= right) {
@@ -102,12 +95,13 @@ void loop() {
       lookForward();
       while (hcsr04.distanceInMillimeters() >= left) {
         turnLeft(200);
-        
+
       }
     }
-        
-    }
-    
+
+  }
+}
+
 
   int goForward(int speed) {
     ledcWrite(0, speed);
@@ -115,21 +109,21 @@ void loop() {
     ledcWrite(2, 0);
     ledcWrite(3, 0);
   }
-  
+
   int goBack(int speed) {
     ledcWrite(0, 0);
     ledcWrite(1, 0);
     ledcWrite(2, speed);
     ledcWrite(3, speed);
   }
-  
+
   int turnLeft(int speed) {
     ledcWrite(0, speed);
     ledcWrite(1, 0);
     ledcWrite(2, 0);
     ledcWrite(3, speed);
   }
-  
+
   int turnRight(int speed) {
     ledcWrite(0, 0);
     ledcWrite(1, speed);
@@ -153,11 +147,9 @@ void loop() {
     ledcWrite(6, 1638);
     delay(500);
   }
-  
+
   int lookForward() {
     int value = map(90, 0, 180, 1638, 7864);
     ledcWrite(6, value);
     delay(500);
   }
-
-}
