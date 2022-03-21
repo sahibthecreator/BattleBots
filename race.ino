@@ -7,10 +7,9 @@
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+/*Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 const byte led_gpio = 17; // the PWM pin the LED is attached to
 const byte led_gpio1 = 5; // the PWM pin the LED is attached to
@@ -79,7 +78,7 @@ void loop() {
     }
     */
   
-}
+/*}
 int goForward(int speed){
     ledcWrite(0, speed); 
     ledcWrite(1, speed); 
@@ -134,4 +133,27 @@ int LineTracking(){
   turnRight(bustSpeed);
   delay(boost_delay);
   
+  }*/
+
+  //for ESP32 microcontroller
+int trigPin = 4:
+int echoPin = 0;     
+
+NewPing sonar(trigPin, echoPin);
+
+void setup(){
+  Serial.begin(9600);
+}
+
+void loop(){
+  float distance = sonar.ping_median(5);
+
+  if(distance>400 || distance<2) Serial.println("Out of range");
+  else
+  {
+    Serial.print("Distance: ");
+    Serial.print(distance, 1); Serial.println(" cm");
   }
+ 
+  delay(50);
+}
