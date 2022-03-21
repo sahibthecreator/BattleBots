@@ -3,6 +3,11 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <hcsr04.h>
+#include <ESP32Servo.h>
+
+#define TRIG_PIN 14
+#define ECHO_PIN 12
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
@@ -11,20 +16,25 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+HCSR04 hcsr04(TRIG_PIN, ECHO_PIN, 20, 4000);
+Servo myservo;  // create servo object to control a servo
 
 const byte led_gpio = 17; // the PWM pin the LED is attached to
 const byte led_gpio1 = 5; // the PWM pin the LED is attached to
 
 const byte back1 = 16; // the PWM pin the LED is attached to
 const byte back2 = 18; // the PWM pin the LED is attached to
-int leftSensor = 39; 
-int rightSensor = 34; 
 
-int brightness = 0;    // how bright the LED is
-int fadeAmount = 5;    // how many points to fade the LED by
+int leftSensor = 39;
+int rightSensor = 34;
+
+int servoPin = 19;
+int pos = 0;
 
 // the setup routine runs once when you press reset:
 void setup() {
+  Serial.begin(115200);
+
   ledcAttachPin(led_gpio, 0); // assign a led pins to a channel
   ledcAttachPin(led_gpio1, 1); // assign a led pins to a channel
   ledcAttachPin(back1, 2); // assign a led pins to a channel
@@ -38,79 +48,180 @@ void setup() {
   ledcSetup(2, 4000, 8); // 12 kHz PWM, 8-bit resolution
   ledcSetup(3, 4000, 8); // 12 kHz PWM, 8-bit resolution
 
+  //------------Servo Motor--------------
+  ledcSetup(6, 50, 16); // channel 2, 50 Hz, 16-bit width
+  ledcAttachPin(19, 6);   // GPIO 19 assigned to channel 2
+
+
+  //-----------Line Tracking Sensor----------
   pinMode (leftSensor, INPUT); // sensor pin INPUT
   pinMode (rightSensor, INPUT); // sensor pin INPUT
-
-  Serial.begin(115200);
 
   // wait until serial port opens for native USB devices
   while (! Serial) {
     delay(1);
   }
-  
-  Serial.println("Adafruit VL53L0X test");
+  //------Distance Sensor Test----------
   if (!lox.begin()) {
     Serial.println(F("Failed to boot VL53L0X"));
-    while(1);
+    while (1);
   }
-  // power 
-  Serial.println(F("VL53L0X API Simple Ranging example\n\n"));
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
-   VL53L0X_RangingMeasurementData_t measure;
-    
-
-  lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
-  //displayDistance();
-
-
-
-  LineTracking();
-  
-  /*if(measure.RangeMilliMeter > 150){
-    goForward(170);
-  }else{
-    goBack();
-    delay(1200);
-    turnRight();
-    delay(1000);
-    }
-    */
-  
-}
-int goForward(int speed){
-    ledcWrite(0, speed); 
-    ledcWrite(1, speed); 
-    ledcWrite(2, 0); 
-    ledcWrite(3, 0); 
-}
-
-int goBack(int speed){
-    ledcWrite(0, 0); 
-    ledcWrite(1, 0); 
-    ledcWrite(2, speed); 
-    ledcWrite(3, speed); 
-}
-
-int turnLeft(int speed){
-    ledcWrite(0, speed); 
-    ledcWrite(1, 0); 
-    ledcWrite(2, 0); 
-    ledcWrite(3, speed); 
-}
-
-int turnRight(int speed){
-    ledcWrite(0, 0); 
-    ledcWrite(1, speed); 
-    ledcWrite(2, speed); 
-    ledcWrite(3, 0); 
-}
-
-int displayDistance(){
   VL53L0X_RangingMeasurementData_t measure;
-    
+  lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+
+
+
+
+  //LineTracking();
+
+
+  if (measure.RangeMilliMeter > 300) {
+    Serial.println("Lidar sensor: ");
+    Serial.println(measure.RangeMilliMeter);
+    goForward(220);
+  }
+  else {
+    stopCar();
+    lookRight();
+    int right = hcsr04.distanceInMillimeters();
+    Serial.println("right sensor: ");
+    Serial.println(hcsr04.distanceInMillimeters());
+    lookLeft();
+    int left = hcsr04.distanceInMillimeters();
+    Serial.println("left sensor: ");
+    Serial.println(hcsr04.distanceInMillimeters());
+    if (right > left) {
+      Serial.println("right MORE: ");
+      lookForward();
+      while (hcsr04.distanceInMillimeters() >= right) {
+        turnRight(200);
+        lox.rangingTest(&measure, false);
+      }
+    } else {
+      Serial.println("LEFT MORE: ");
+      while (hcsr04.distanceInMillimeters() >= left) {
+        turnLeft(200);
+        lox.rangingTest(&measure, false);
+      }
+    }
+
+  }
+
+}
+
+
+int goForward(int speed) {
+  ledcWrite(0, speed);
+  ledcWrite(1, speed);
+  ledcWrite(2, 0);
+  ledcWrite(3, 0);
+}
+
+int goBack(int speed) {
+  ledcWrite(0, 0);
+  ledcWrite(1, 0);
+  ledcWrite(2, speed);
+  ledcWrite(3, speed);
+}
+
+int turnLeft(int speed) {
+  ledcWrite(0, speed);
+  ledcWrite(1, 0);
+  ledcWrite(2, 0);
+  ledcWrite(3, speed);
+}
+
+int turnRight(int speed) {
+  ledcWrite(0, 0);
+  ledcWrite(1, speed);
+  ledcWrite(2, speed);
+  ledcWrite(3, 0);
+}
+
+int stopCar() {
+  ledcWrite(0, 0);
+  ledcWrite(1, 0);
+  ledcWrite(2, 0);
+  ledcWrite(3, 0);
+}
+
+int lookLeft() {
+  ledcWrite(6, 7864);
+  delay(500);
+}
+
+int lookRight() {
+  ledcWrite(6, 1638);
+  delay(500);
+}
+
+int lookForward() {
+  int value = map(90, 0, 180, 1638, 7864);
+  ledcWrite(6, value);
+  delay(500);
+}
+
+int findWay() {
+  VL53L0X_RangingMeasurementData_t measure;
+  int distance = 0;
+  int distance1 = 0;
+
+  stopCar();
+  delay(500);
+
+  for (int i = 0; i < 20; i++) {
+    turnRight(150);
+    lox.rangingTest(&measure, false);
+    if (distance < measure.RangeMilliMeter) {
+      distance = measure.RangeMilliMeter;
+    }
+    delay(6);
+  }
+  //turnRight(175);
+  //delay(600);
+
+  stopCar();
+  //lox.rangingTest(&measure, false);
+  //Serial.println("on right distance is ");
+  //Serial.println(measure.RangeMilliMeter);
+  //distance = measure.RangeMilliMeter;
+  delay(500);
+  for (int i = 0; i < 20; i++) {
+    turnLeft(175);
+    lox.rangingTest(&measure, false);
+    if (distance1 < measure.RangeMilliMeter) {
+      distance1 = measure.RangeMilliMeter;
+    }
+    delay(12);
+  }
+  //turnLeft(175);
+  //delay(1200);
+  stopCar();
+  delay(500);
+  //lox.rangingTest(&measure, false);
+  //Serial.println("on left distance is ");
+  //Serial.println(measure.RangeMilliMeter);
+  if (distance < distance1 )
+  {
+    return 1;
+  } else {
+    /*turnRight(175);
+      delay(920);
+      goForward(0); // stop
+      break; */
+    return 0;
+  }
+
+}
+
+
+int displayDistance() {
+  VL53L0X_RangingMeasurementData_t measure;
+
 
   lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
 
@@ -121,82 +232,64 @@ int displayDistance(){
   display.setCursor(0, 10);
   // Display static text
   display.println(measure.RangeMilliMeter);
-  display.display(); 
+  display.display();
 }
 
 //---------------------------------------------
 //------------LINE TRACKING FUNCTION-----------
 //---------------------------------------------
-int LineTracking(){ 
+int LineTracking() {
   int sensorL = analogRead (leftSensor);
   int sensorR = analogRead (rightSensor);
-  int vSpeed = 125;        // MAX 255
-  int turn_speed = 160;    // MAX 255 
-  int turn_delay = 30;
+  int vSpeed = 130;        // MAX 255
+  int turn_speed = 140;    // MAX 255
+  int turn_delay = 5;
 
   Serial.print(F("Right sensor = "));
   Serial.println((sensorR));
-    Serial.print(F("Left sensor = "));
+  Serial.print(F("Left sensor = "));
   Serial.println((sensorL));
-  
-  if(sensorR > 300 && sensorL < 300)
-{
-  Serial.println("turning right");
 
-  turnRight(turn_speed);
-  delay(turn_delay);
-  
-  }
-if(sensorR < 300 && sensorL > 300)
-{
-  Serial.println("turning left");
-  
-  turnLeft(turn_speed);
-
-  delay(turn_delay);
-  }
-
-if(sensorR < 300 && sensorL < 300)
-{
-  Serial.println("going forward");
-
-  goBack(vSpeed);
-  
-  }
-
-if(sensorR > 300 && sensorL > 300)
-{ 
-  Serial.println("stop");
-  
-    ledcWrite(0, 0); 
-    ledcWrite(1, 0); 
-    ledcWrite(2, 0); 
-    ledcWrite(3, 0); 
-  
-  }
-
-  /*
-  if (sensorL < 300  && sensorR < 300){
-    goBack(140);
-  }
-  else if(sensorL > 300 && sensorR < 300){
-    ledcWrite(0, 135); // set the brightness of the LED
-    ledcWrite(1, 0); // set the brightness of the LED
-    ledcWrite(2, 0); // set the brightness of the LED
-    ledcWrite(3, 135); // set the brightness of the LED
-  }
-  else if(sensorL < 300 && sensorR  > 300){
-    ledcWrite(0, 0); // set the brightness of the LED
-    ledcWrite(1, 135); // set the brightness of the LED
-    ledcWrite(2, 135); // set the brightness of the LED
-    ledcWrite(3, 0); // set the brightness of the LED
-  }
-  else
+  if (sensorR > 150 && sensorL < 150)
   {
-    ledcWrite(0, 0); // set the brightness of the LED
-    ledcWrite(1, 0); // set the brightness of the LED
-    ledcWrite(2, 0); // set the brightness of the LED
-    ledcWrite(3, 0); // set the brightness of the LED
+    Serial.println("turning right");
+    while (sensorR > 150) {
+      turnRight(turn_speed);
+      sensorR = analogRead (rightSensor);
+    }
+
+    //delay(turn_delay);
+
   }
-  */
+  if (sensorR < 150 && sensorL > 150)
+  {
+    Serial.println("turning left");
+    while (sensorL > 150) {
+      turnLeft(turn_speed);
+      sensorL = analogRead (leftSensor);
+    }
+
+
+    //delay(turn_delay);
+  }
+
+  if (sensorR < 150 && sensorL < 150)
+  {
+    Serial.println("going forward");
+
+    goBack(vSpeed);
+
+  }
+
+  if (sensorR > 150 && sensorL > 150)
+  {
+    Serial.println("stop");
+
+    ledcWrite(0, 0);
+    ledcWrite(1, 0);
+    ledcWrite(2, 0);
+    ledcWrite(3, 0);
+
+  }
+
 }
