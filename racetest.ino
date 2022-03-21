@@ -65,7 +65,7 @@ void setup() {
 
 void loop() {
 
-  if (hcsr04.distanceInMillimeters() > 300) {
+  if (hcsr04.distanceInMillimeters() > 450) {
     Serial.println("Front sensor: ");
     Serial.println(hcsr04.distanceInMillimeters());
     goForward(200);
@@ -86,15 +86,15 @@ void loop() {
     if (right > left) {
       Serial.println("right MORE: ");
       lookForward();
-      while (hcsr04.distanceInMillimeters() >= right) {
-        turnRight(200);
+      while (hcsr04.distanceInMillimeters() <= right) {
+        turnRight(180);
 
       }
     } else {
       Serial.println("LEFT MORE: ");
       lookForward();
-      while (hcsr04.distanceInMillimeters() >= left) {
-        turnLeft(200);
+      while (hcsr04.distanceInMillimeters() <= left) {
+        turnLeft(180);
 
       }
     }
