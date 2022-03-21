@@ -27,6 +27,7 @@ const byte back2 = 18; // the PWM pin the LED is attached to
 
 int leftSensor = 39;
 int rightSensor = 34;
+int middleSensor = 13;
 
 int servoPin = 19;
 int pos = 0;
@@ -62,24 +63,26 @@ void setup() {
     delay(1);
   }
   //------Distance Sensor Test----------
+  /*
   if (!lox.begin()) {
     Serial.println(F("Failed to boot VL53L0X"));
     while (1);
   }
+  */
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
-  VL53L0X_RangingMeasurementData_t measure;
-  lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
+  //VL53L0X_RangingMeasurementData_t measure;
+  //lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
 
 
 
 
   //LineTracking();
 
-
-  if (measure.RangeMilliMeter > 300) {
+  lookForward();
+  if (hcsr04.distanceInMillimeters(); > 300) {
     Serial.println("Lidar sensor: ");
     Serial.println(measure.RangeMilliMeter);
     goForward(220);
@@ -99,17 +102,18 @@ void loop() {
       lookForward();
       while (hcsr04.distanceInMillimeters() >= right) {
         turnRight(200);
-        lox.rangingTest(&measure, false);
+        //lox.rangingTest(&measure, false);
       }
     } else {
       Serial.println("LEFT MORE: ");
       while (hcsr04.distanceInMillimeters() >= left) {
         turnLeft(200);
-        lox.rangingTest(&measure, false);
+        //lox.rangingTest(&measure, false);
       }
     }
 
   }
+  
 
 }
 
@@ -241,21 +245,26 @@ int displayDistance() {
 int LineTracking() {
   int sensorL = analogRead (leftSensor);
   int sensorR = analogRead (rightSensor);
+  int sensorM = analogRead (middleSensor);
   int vSpeed = 130;        // MAX 255
   int turn_speed = 140;    // MAX 255
   int turn_delay = 5;
 
   Serial.print(F("Right sensor = "));
   Serial.println((sensorR));
+  Serial.print(F("Middle sensor = "));
+  Serial.println((sensorM));
   Serial.print(F("Left sensor = "));
   Serial.println((sensorL));
 
   if (sensorR > 150 && sensorL < 150)
   {
     Serial.println("turning right");
-    while (sensorR > 150) {
+    while (sensorR > 150 && sensorL < 150 && sensorM < 150) {
       turnRight(turn_speed);
+       sensorL = analogRead (leftSensor);
       sensorR = analogRead (rightSensor);
+      sensorM = analogRead (middleSensor);
     }
 
     //delay(turn_delay);
@@ -264,16 +273,18 @@ int LineTracking() {
   if (sensorR < 150 && sensorL > 150)
   {
     Serial.println("turning left");
-    while (sensorL > 150) {
+    while (sensorR < 150 && sensorL > 150 && sensorM < 150) {
       turnLeft(turn_speed);
       sensorL = analogRead (leftSensor);
+      sensorR = analogRead (rightSensor);
+      sensorM = analogRead (middleSensor);
     }
 
 
     //delay(turn_delay);
   }
 
-  if (sensorR < 150 && sensorL < 150)
+  if (sensorR < 150 && sensorL < 150 && sensorM > 150)
   {
     Serial.println("going forward");
 
