@@ -79,40 +79,41 @@ void loop() {
 
 
 
-  //LineTracking();
-
-  lookForward();
-  if (hcsr04.distanceInMillimeters(); > 300) {
-    Serial.println("Lidar sensor: ");
-    Serial.println(measure.RangeMilliMeter);
+  LineTracking();
+/*
+  Serial.println(hcsr04.distanceInMillimeters());
+  if (hcsr04.distanceInMillimeters() > 300) {
     goForward(220);
   }
   else {
     stopCar();
     lookRight();
     int right = hcsr04.distanceInMillimeters();
-    Serial.println("right sensor: ");
-    Serial.println(hcsr04.distanceInMillimeters());
+    //Serial.println("right sensor: ");
+    //Serial.println(hcsr04.distanceInMillimeters());
     lookLeft();
     int left = hcsr04.distanceInMillimeters();
-    Serial.println("left sensor: ");
-    Serial.println(hcsr04.distanceInMillimeters());
+    //Serial.println("left sensor: ");
+    //Serial.println(hcsr04.distanceInMillimeters());
     if (right > left) {
-      Serial.println("right MORE: ");
+      //Serial.println("right MORE: ");
       lookForward();
-      while (hcsr04.distanceInMillimeters() >= right) {
+      while (hcsr04.distanceInMillimeters() < 300) {
         turnRight(200);
         //lox.rangingTest(&measure, false);
       }
     } else {
-      Serial.println("LEFT MORE: ");
-      while (hcsr04.distanceInMillimeters() >= left) {
+      //Serial.println("LEFT MORE: ");
+      lookForward();
+      while (hcsr04.distanceInMillimeters() < 300) {
         turnLeft(200);
         //lox.rangingTest(&measure, false);
       }
     }
 
   }
+  */
+  
   
 
 }
@@ -246,9 +247,9 @@ int LineTracking() {
   int sensorL = analogRead (leftSensor);
   int sensorR = analogRead (rightSensor);
   int sensorM = analogRead (middleSensor);
-  int vSpeed = 130;        // MAX 255
-  int turn_speed = 140;    // MAX 255
-  int turn_delay = 5;
+  int vSpeed =  240;        // MAX 255  220-240 speed best
+  int turn_speed = 180;    // MAX 255 180 speed best
+  int turn_delay = 0;
 
   Serial.print(F("Right sensor = "));
   Serial.println((sensorR));
@@ -256,7 +257,6 @@ int LineTracking() {
   Serial.println((sensorM));
   Serial.print(F("Left sensor = "));
   Serial.println((sensorL));
-
   if (sensorR > 150 && sensorL < 150)
   {
     Serial.println("turning right");
@@ -265,6 +265,7 @@ int LineTracking() {
        sensorL = analogRead (leftSensor);
       sensorR = analogRead (rightSensor);
       sensorM = analogRead (middleSensor);
+      //lookLeft();
     }
 
     //delay(turn_delay);
@@ -278,6 +279,7 @@ int LineTracking() {
       sensorL = analogRead (leftSensor);
       sensorR = analogRead (rightSensor);
       sensorM = analogRead (middleSensor);
+      //lookRight();
     }
 
 
