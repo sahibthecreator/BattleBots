@@ -12,6 +12,8 @@
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
+#define SOUND_SPEED 0.034
+
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
@@ -31,6 +33,9 @@ int middleSensor = 13;
 
 int servoPin = 19;
 int pos = 0;
+
+long duration;
+float distanceCm;
 
 // the setup routine runs once when you press reset:
 void setup() {
@@ -69,6 +74,9 @@ void setup() {
     while (1);
   }
   */
+
+  pinMode(TRIG_PIN, OUTPUT); // Sets the trigPin as an Output
+  pinMode(ECHO_PIN, INPUT); // Sets the echoPin as an Input
 }
 
 // the loop routine runs over and over again forever:
@@ -76,43 +84,49 @@ void loop() {
   //VL53L0X_RangingMeasurementData_t measure;
   //lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
 
+  
+  //LineTracking();
+  
+  
+ 
+  
+  // Prints the distance in the Serial Monitor
+  Serial.print("Distance (cm): ");
+  Serial.println(distanceCm);
 
-
-
-  LineTracking();
-/*
-  Serial.println(hcsr04.distanceInMillimeters());
-  if (hcsr04.distanceInMillimeters() > 300) {
+  
+  if (getDistance() > 25) {
     goForward(220);
+    Serial.println(distanceCm);
   }
   else {
     stopCar();
     lookRight();
-    int right = hcsr04.distanceInMillimeters();
+    int right = getDistance();
     //Serial.println("right sensor: ");
     //Serial.println(hcsr04.distanceInMillimeters());
     lookLeft();
-    int left = hcsr04.distanceInMillimeters();
+    int left = getDistance();
     //Serial.println("left sensor: ");
     //Serial.println(hcsr04.distanceInMillimeters());
     if (right > left) {
-      //Serial.println("right MORE: ");
       lookForward();
-      while (hcsr04.distanceInMillimeters() < 300) {
-        turnRight(200);
+      while (getDistance() < right) {
+        turnRight(255);
+        
         //lox.rangingTest(&measure, false);
       }
     } else {
       //Serial.println("LEFT MORE: ");
       lookForward();
-      while (hcsr04.distanceInMillimeters() < 300) {
-        turnLeft(200);
+      while (getDistance() < left) {
+        turnLeft(255);
         //lox.rangingTest(&measure, false);
       }
     }
 
   }
-  */
+  
   
   
 
@@ -168,6 +182,15 @@ int lookForward() {
   int value = map(90, 0, 180, 1638, 7864);
   ledcWrite(6, value);
   delay(500);
+}
+
+int getDistance(){
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distanceCm = duration * SOUND_SPEED/2;
+  return distanceCm;
 }
 
 int findWay() {
