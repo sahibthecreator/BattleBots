@@ -5,9 +5,16 @@
 #include <Adafruit_SSD1306.h>
 #include <hcsr04.h>
 #include <ESP32Servo.h>
+#include <hcsr04.h>
 
 #define TRIG_PIN 14
 #define ECHO_PIN 12
+
+#define TRIG_PIN_R 2
+#define ECHO_PIN_R 15
+
+#define TRIG_PIN_L 19
+#define ECHO_PIN_L 21
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
@@ -18,7 +25,12 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 Adafruit_VL53L0X lox = Adafruit_VL53L0X();
-HCSR04 hcsr04(TRIG_PIN, ECHO_PIN, 20, 4000);
+HCSR04 middle_dist_sensor(TRIG_PIN, ECHO_PIN, 20, 4000);
+
+HCSR04 right_dist_sensor(TRIG_PIN_R, ECHO_PIN_R, 20, 4000);
+
+HCSR04 left_dist_sensor(TRIG_PIN_L, ECHO_PIN_L, 20, 4000);
+
 Servo myservo;  // create servo object to control a servo
 
 const byte led_gpio = 17; // the PWM pin the LED is attached to
@@ -31,11 +43,11 @@ int leftSensor = 39;
 int rightSensor = 34;
 int middleSensor = 13;
 
-int servoPin = 19;
-int pos = 0;
 
 long duration;
 float distanceCm;
+
+bool checked = false;
 
 // the setup routine runs once when you press reset:
 void setup() {
@@ -54,9 +66,7 @@ void setup() {
   ledcSetup(2, 4000, 8); // 12 kHz PWM, 8-bit resolution
   ledcSetup(3, 4000, 8); // 12 kHz PWM, 8-bit resolution
 
-  //------------Servo Motor--------------
-  ledcSetup(6, 50, 16); // channel 2, 50 Hz, 16-bit width
-  ledcAttachPin(19, 6);   // GPIO 19 assigned to channel 2
+
 
 
   //-----------Line Tracking Sensor----------
@@ -69,14 +79,11 @@ void setup() {
   }
   //------Distance Sensor Test----------
   /*
-  if (!lox.begin()) {
+    if (!lox.begin()) {
     Serial.println(F("Failed to boot VL53L0X"));
     while (1);
-  }
+    }
   */
-
-  pinMode(TRIG_PIN, OUTPUT); // Sets the trigPin as an Output
-  pinMode(ECHO_PIN, INPUT); // Sets the echoPin as an Input
 }
 
 // the loop routine runs over and over again forever:
@@ -84,53 +91,86 @@ void loop() {
   //VL53L0X_RangingMeasurementData_t measure;
   //lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
 
-  
-  //LineTracking();
-  
-  
- 
-  
-  // Prints the distance in the Serial Monitor
-  Serial.print("Distance (cm): ");
-  Serial.println(distanceCm);
 
-  
-  if (getDistance() > 25) {
-    goForward(220);
-    Serial.println(distanceCm);
-  }
-  else {
+  //LineTracking();
+
+  if (getDistanceF() > 200) {
+    goForward(180);
+  } else {
     stopCar();
-    lookRight();
-    int right = getDistance();
-    //Serial.println("right sensor: ");
-    //Serial.println(hcsr04.distanceInMillimeters());
-    lookLeft();
-    int left = getDistance();
-    //Serial.println("left sensor: ");
-    //Serial.println(hcsr04.distanceInMillimeters());
-    if (right > left) {
-      lookForward();
-      while (getDistance() < right) {
-        turnRight(255);
-        
-        //lox.rangingTest(&measure, false);
+    if (getDistanceR() > getDistanceL()) {
+      while (getDistanceF() < 200 && getDistanceL() > 10) { // rotation algorithm
+        turnRight(190);
+        delay(50);
       }
     } else {
-      //Serial.println("LEFT MORE: ");
-      lookForward();
-      while (getDistance() < left) {
-        turnLeft(255);
-        //lox.rangingTest(&measure, false);
+      while (getDistanceF() < 200 && getDistanceR() > 10) { // rotation algorithm
+        turnLeft(190);
+        delay(50);
       }
     }
+  }
+  //if (getDistanceF() > 200 && getDistance)
+
+
+    /*
+      if (getDistanceF() > 20) {
+        goForward(200);
+        Serial.print("Distance (cm): ");
+        Serial.println(getDistance());
+        checked = false;
+      }
+      else {
+        stopCar();
+        if (checked == false) {
+        checked = true;
+
+          lookRight();
+          int right = getDistance();
+          Serial.print("Right Distance (cm): ");
+          Serial.println(getDistance());
+          //delay(5000);
+          lookLeft();
+          int left = getDistance();
+          Serial.print("Left Distance (cm): ");
+          Serial.println(getDistance());
+          // delay(5000);
+          //Serial.println("left sensor: ");
+          //Serial.println(hcsr04.distanceInMillimeters());
+          if (right > left) {
+            Serial.println("Right MORE: ");
+            lookForward();
+            int distance = getDistance();
+
+            while (distance < 20) { // rotation algorithm
+              turnRight(170);
+
+              Serial.print("Turning Right || Distance (cm): ");
+              Serial.println(getDistance());
+              distance = getDistance();
+              delay(100);
+            }
+          } else {
+            Serial.println("LEFT MORE: ");
+            lookForward();
+            int distance = getDistance();
+
+            while (distance < 20) { // rotation algorithm
+              turnLeft(170);
+
+              Serial.print("Turning Left || Distance (cm): ");
+              Serial.println(getDistance());
+              distance = getDistance();
+              delay(100);
+            }
+          }
+
+        }
+      }
+    */
+
 
   }
-  
-  
-  
-
-}
 
 
 int goForward(int speed) {
@@ -184,13 +224,16 @@ int lookForward() {
   delay(500);
 }
 
-int getDistance(){
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  duration = pulseIn(ECHO_PIN, HIGH);
-  distanceCm = duration * SOUND_SPEED/2;
-  return distanceCm;
+int getDistanceF() {
+  return middle_dist_sensor.distanceInMillimeters();
+}
+
+int getDistanceR() {
+  return right_dist_sensor.distanceInMillimeters();
+}
+
+int getDistanceL() {
+  return left_dist_sensor.distanceInMillimeters();
 }
 
 int findWay() {
@@ -285,7 +328,7 @@ int LineTracking() {
     Serial.println("turning right");
     while (sensorR > 150 && sensorL < 150 && sensorM < 150) {
       turnRight(turn_speed);
-       sensorL = analogRead (leftSensor);
+      sensorL = analogRead (leftSensor);
       sensorR = analogRead (rightSensor);
       sensorM = analogRead (middleSensor);
       //lookLeft();
