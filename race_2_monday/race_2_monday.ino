@@ -65,17 +65,17 @@ void loop() {
   //LineTracking()
 
     
-    if (getDistanceF() > 200) {
+    if (measure.RangeMilliMeter > 200) {
         goForward(180);
     } else {
         stopCar();
-        if (getDistanceR() > getDistanceL()) {
-        while (getDistanceF() < 200 && getDistanceL() > 10) { // rotation algorithm
+        if (getDistanceL() < 100) {
+        while (measure.RangeMilliMeter < 250 && getDistanceL() > 100) { // rotation algorithm
             turnRight(190);
             delay(50);
         }
         } else {
-        while (getDistanceF() < 200 && getDistanceR() > 10) { // rotation algorithm
+        while (getDistanceF() < 250 ) { // rotation algorithm
             turnLeft(190);
             delay(50);
         }
@@ -120,78 +120,26 @@ int stopCar() {
   ledcWrite(2, 0);
   ledcWrite(3, 0);
 }
-
-int lookLeft() {
-  ledcWrite(6, 7864);
-  delay(500);
-}
-
-int lookRight() {
-  ledcWrite(6, 1638);
-  delay(500);
-}
-
-int lookForward() {
-  int value = map(90, 0, 180, 1638, 7864);
-  ledcWrite(6, value);
-  delay(500);
-}
-
-int getDistanceF() {
-  return middle_dist_sensor.distanceInMillimeters();
-}
-
-int getDistanceR() {
-  return right_dist_sensor.distanceInMillimeters();
-}
-
+ 
 int getDistanceL() {
   return left_dist_sensor.distanceInMillimeters();
 }
 
-int findWay() {
-  VL53L0X_RangingMeasurementData_t measure;
-  int distance = 0;
-  int distance1 = 0;
 
-  stopCar();
-  delay(500);
+int LineTracking(){ 
+  int sensorL = analogRead (leftSensor);
+  int sensorR = analogRead (rightSensor);
+  int bustSpeed = 255;    // MAX 255 
+  int boost_delay = 3000;
+  
+  if(sensorR > 300 && sensorL > 300)
+{
+  Serial.println("boooooost");
 
-  for (int i = 0; i < 20; i++) {
-    turnRight(150);
-    lox.rangingTest(&measure, false);
-    if (distance < measure.RangeMilliMeter) {
-      distance = measure.RangeMilliMeter;
-    }
-    delay(6);
+  turnRight(bustSpeed);
+  delay(boost_delay);
+  
   }
-
-
-  stopCar();
- 
-  delay(500);
-  for (int i = 0; i < 20; i++) {
-    turnLeft(175);
-    lox.rangingTest(&measure, false);
-    if (distance1 < measure.RangeMilliMeter) {
-      distance1 = measure.RangeMilliMeter;
-    }
-    delay(12);
-  }
-
-  stopCar();
-  delay(500);
- 
-  if (distance < distance1 )
-  {
-    return 1;
-  } else {
-
-    return 0;
-  }
-
-}
-
 
 int displayDistance() {
   VL53L0X_RangingMeasurementData_t measure;
