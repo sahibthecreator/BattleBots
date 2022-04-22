@@ -61,9 +61,9 @@ void setup() {
 void loop() {
 
 
-
-  //LineTracking()
-
+    VL53L0X_RangingMeasurementData_t measure;
+    Serial.print("Reading a measurement... ");
+    lox.rangingTest(&measure, false);
     
     if (measure.RangeMilliMeter > 200) {
         goForward(180);
