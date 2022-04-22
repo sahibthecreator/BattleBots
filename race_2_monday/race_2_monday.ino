@@ -75,7 +75,7 @@ void loop() {
             delay(50);
         }
         } else {
-        while (getDistanceF() < 250 ) { // rotation algorithm
+        while (measure.RangeMilliMeter < 250 ) { // rotation algorithm
             turnLeft(190);
             delay(50);
         }
@@ -126,20 +126,6 @@ int getDistanceL() {
 }
 
 
-int LineTracking(){ 
-  int sensorL = analogRead (leftSensor);
-  int sensorR = analogRead (rightSensor);
-  int bustSpeed = 255;    // MAX 255 
-  int boost_delay = 3000;
-  
-  if(sensorR > 300 && sensorL > 300)
-{
-  Serial.println("boooooost");
-
-  turnRight(bustSpeed);
-  delay(boost_delay);
-  
-  }
 
 int displayDistance() {
   VL53L0X_RangingMeasurementData_t measure;
@@ -147,12 +133,4 @@ int displayDistance() {
 
   lox.rangingTest(&measure, false); // pass in 'true' to get debug data printout!
 
-  display.clearDisplay();
-
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 10);
-  // Display static text
-  display.println(measure.RangeMilliMeter);
-  display.display();
 }
