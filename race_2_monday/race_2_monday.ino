@@ -66,17 +66,23 @@ void loop() {
     lox.rangingTest(&measure, false);
     
     if (measure.RangeMilliMeter > 200) {
+        lox.rangingTest(&measure, false);
+
         goForward(180);
     } else {
         stopCar();
         if (getDistanceL() < 100) {
-        while (measure.RangeMilliMeter < 250 && getDistanceL() > 100) { // rotation algorithm
+        while (measure.RangeMilliMeter < 150) { // rotation algorithm
             turnRight(190);
+            lox.rangingTest(&measure, false);
+
             delay(50);
         }
         } else {
-        while (measure.RangeMilliMeter < 250 ) { // rotation algorithm
+        while (measure.RangeMilliMeter < 150  ) { // rotation algorithm
             turnLeft(190);
+            lox.rangingTest(&measure, false);
+
             delay(50);
         }
         }
